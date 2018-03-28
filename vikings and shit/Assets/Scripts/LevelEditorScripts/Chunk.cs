@@ -6,6 +6,8 @@ public class Chunk {
 
 	public GameObject plane;
 
+	public GameObject visual;
+
 	public MeshFilter mesh_filter;
 
 	public int chunk_index_x;

@@ -359,8 +359,7 @@ public class CustomLevelEditor : MonoBehaviour
 
 
 	public float Average(List<SelectedVertices> sv) 
-	{
-		
+	{		
 		float sum = 0.0f;
 		float size = 0.0f;
 
@@ -386,29 +385,49 @@ public class CustomLevelEditor : MonoBehaviour
 
 	void TestTexture(Chunk chunk) 
 	{
-		Renderer rend = chunk.plane.GetComponent<Renderer>();
+		Mesh mesh = Instantiate<Mesh>(chunk.plane.GetComponent<MeshFilter>().sharedMesh);
 
-		Texture2D texture = new Texture2D (20, 20);
-		rend.sharedMaterial.mainTexture = texture;
-		Color[] colors = new Color[3];
-		colors[0] = Color.red;
-		colors[1] = Color.green;
-		colors[2] = Color.blue;
-		int mipCount = Mathf.Min(3, texture.mipmapCount);
+		Vector3[] vertices = mesh.vertices;
+        int[] triangles = mesh.triangles;
 
-		for (int mip = 0; mip < mipCount; mip++)
+		var newVertices = new Vector3[mesh.triangles.Length];
+ 		var newUV = new Vector2[mesh.triangles.Length];
+ 		var newNormals = new Vector3[mesh.triangles.Length];
+ 		var newTriangles = new int[mesh.triangles.Length];
+
+ 		for (var i = 0; i < mesh.triangles.Length; i++) 
 		{
-			Color[] cols = texture.GetPixels(mip);
-			for (int i = 0; i < cols.Length; i++)
-			{
-				cols [i] = new Color (0.9f,0, 0.1f);
-			}
-			texture.SetPixels(cols, mip);
-		}
+     		newVertices[i] = vertices[triangles[i]];
+     		newUV[i] = mesh.uv[triangles[i]];
+     		newNormals[i] = mesh.normals[mesh.triangles[i]];
+     		newTriangles[i] = i;
+ 		}
 
-		texture.filterMode = FilterMode.Point;
-		texture.Apply(false);
-	}
+		//mesh.uv = newUV;
+		mesh.vertices = newVertices;
+		mesh.normals = newNormals;
+		mesh.triangles = newTriangles;
+
+		Color[] colors = new Color[mesh.vertices.Length];
+        for (int i = 0; i < colors.Length; i+=3)
+		{
+			Color rand_color = getRandomColor();
+			for(int x = 0; x < 3; x++)
+				colors[i + x] = rand_color;
+		}
+       
+
+	   	mesh.colors = colors;
+		chunk.plane.GetComponent<MeshFilter>().sharedMesh = mesh;
+     }
+     
+     private Color getRandomColor()
+     {
+         float red = Random.Range(0.0f, 0.05f);
+         float green = Random.Range(0.3f, 0.4f);
+         float blue = Random.Range(0, 0);
+         return new Color(red, green, blue);
+     }
 
 
 	#endregion
@@ -419,8 +438,7 @@ public class CustomLevelEditor : MonoBehaviour
 
 
 public class SelectedVertices 
-{
-	
+{	
 	public int chunk_index;
 	public List<int> vertices_index;
 
