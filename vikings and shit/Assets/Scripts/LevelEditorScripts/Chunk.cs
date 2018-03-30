@@ -15,6 +15,7 @@ public class Chunk {
 
 	public int chunk_serial_index; 
 
+	public Color[] colors;
 
 	public Chunk(GameObject chunk_prefab, Vector3 position, int chunk_index_x, int chunk_index_z, int chunk_serial_index) {
 
@@ -22,6 +23,7 @@ public class Chunk {
 		this.chunk_index_z = chunk_index_z;
 
 		this.chunk_serial_index = chunk_serial_index;
+
 
 		plane = GameObject.Instantiate(chunk_prefab);
 		plane.transform.position = position;

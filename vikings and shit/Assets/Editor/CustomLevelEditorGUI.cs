@@ -12,6 +12,7 @@ public class CustomLevelEditorGUI : Editor
 
 	bool indicate_vertices;
 
+	int i = 0;
 
 	public override void OnInspectorGUI() 
 	{
@@ -164,6 +165,10 @@ public class CustomLevelEditorGUI : Editor
 						}
 					}
 					break;
+				}
+				foreach (SelectedVertices sv in selected_vertices) 
+				{
+					level_editor.UpdateTexture(level_editor.chunks[sv.chunk_index]);
 				}
 			}
 		}

@@ -24,6 +24,8 @@ public class CustomLevelEditor : MonoBehaviour
 	public Material default_material;
 
 
+	public GameObject debug_cube;
+
 	[HideInInspector]
 	[Range(-1f, 1f)]
 	public float delta_height;
@@ -48,6 +50,7 @@ public class CustomLevelEditor : MonoBehaviour
 
 	public Chunk[] chunks;
 
+	public LinkedIndex[] linked_indexes;
 
 
 	#region TOOLS_DEFINITIONS
@@ -261,8 +264,7 @@ public class CustomLevelEditor : MonoBehaviour
 
 
 	List<int> NearestChunks(Vector3 point) 
-		{
-		
+	{	
 		List<int> selected_chunks = new List<int> ();
 		int x_index = (int)point.x / 10;
 		int z_index = (int)point.z / 10;
@@ -318,11 +320,18 @@ public class CustomLevelEditor : MonoBehaviour
 
 		foreach(Transform t in childs) 
 		{
+			if(t == null)
+			{
+				continue;
+			}
 			if (t.gameObject.name == terrain_object.name) 
 			{
 				continue;
 			}
-			DestroyImmediate (t.gameObject);
+			if	(t.gameObject.name.Contains("chunk"))
+			{
+				DestroyImmediate (t.gameObject);
+			}
 		}
 	}
 
@@ -341,13 +350,25 @@ public class CustomLevelEditor : MonoBehaviour
 
 				chunks [index] = new Chunk (chunk_prefab, new Vector3 (5 + x * 10f, 0, 5 + z * 10f), x, z, z * width + x);
 				chunks [index].plane.transform.parent = terrain_object.transform;
-				chunks [index].plane.GetComponent<Renderer> ().sharedMaterial = default_material;
 				chunks [index].plane.layer = LayerMask.NameToLayer ("Terrain");
 				chunks [index].chunk_serial_index = index;
 				chunks [index].plane.name = "chunk: " + index.ToString ();
-				//TestTexture (chunks [index]);
+				InvertTriangles(chunks [index]);
+				InitColoredMesh(chunks[index]);
+				TestTexture (chunks [index]);
 			}
 		}
+	}
+
+	void InitColoredMesh(Chunk chunk)
+	{
+		chunk.visual = new GameObject();
+		chunk.visual.transform.parent = chunk.plane.transform;
+		chunk.visual.transform.localPosition = new Vector3(0,0,0);
+		chunk.visual.name = "visual";
+		chunk.visual.AddComponent<MeshFilter>();
+		chunk.visual.AddComponent<MeshRenderer>();
+		chunk.visual.GetComponent<MeshRenderer>().sharedMaterial = default_material;
 	}
 
 
@@ -374,6 +395,50 @@ public class CustomLevelEditor : MonoBehaviour
 
 		return sum / size;
 	}
+
+	public void InitLinkedIndexes() {
+		Mesh mesh = chunk_prefab.GetComponent<MeshFilter>().sharedMesh;
+
+	}
+
+	public void InvertTriangles(Chunk chunk){
+		Mesh mesh = chunk.plane.GetComponent<MeshFilter>().sharedMesh;
+
+		int size = 11;
+		List<int> indices = new List<int>();
+
+		bool t = true;
+		for(int z = 0; z < size - 1; z++)
+		{
+            for(int x = 0; x < size - 1; x++)
+			{
+				if(t)
+				{
+					indices.Add(z * size + x);
+					indices.Add((z + 1) * size + x);
+					indices.Add(z * size + x + 1);
+					
+					indices.Add(z * size + x + 1);
+					indices.Add((z + 1) * size + x);
+					indices.Add((z + 1) * size + x + 1);
+				}
+				else
+				{
+					indices.Add(z * size + x);
+					indices.Add((z + 1) * size + x + 1);
+					indices.Add(z * size + x + 1);
+
+					indices.Add(z * size + x); //3
+					indices.Add((z + 1) * size + x); //2
+					indices.Add((z + 1) * size + x + 1); //1					
+				}
+				t = !t;
+            }
+			t = !t;
+        }
+		mesh.triangles = indices.ToArray();
+		chunk.plane.GetComponent<MeshCollider>().sharedMesh = mesh;
+	}
 		
 
 	#endregion
@@ -383,58 +448,106 @@ public class CustomLevelEditor : MonoBehaviour
 	#region PAINTER
 
 
-	void TestTexture(Chunk chunk) 
+	public void TestTexture(Chunk chunk) 
 	{
+
 		Mesh mesh = Instantiate<Mesh>(chunk.plane.GetComponent<MeshFilter>().sharedMesh);
 
+		chunk.colors = ColorMap();
+
 		Vector3[] vertices = mesh.vertices;
-        int[] triangles = mesh.triangles;
+		int[] triangles = mesh.triangles;
 
 		var newVertices = new Vector3[mesh.triangles.Length];
- 		var newUV = new Vector2[mesh.triangles.Length];
- 		var newNormals = new Vector3[mesh.triangles.Length];
- 		var newTriangles = new int[mesh.triangles.Length];
+		var newUV = new Vector2[mesh.triangles.Length];
+		var newNormals = new Vector3[mesh.triangles.Length];
+		var newTriangles = new int[mesh.triangles.Length];
 
- 		for (var i = 0; i < mesh.triangles.Length; i++) 
+		for (int i = 0; i < mesh.triangles.Length; i++) 
 		{
-     		newVertices[i] = vertices[triangles[i]];
-     		newUV[i] = mesh.uv[triangles[i]];
-     		newNormals[i] = mesh.normals[mesh.triangles[i]];
-     		newTriangles[i] = i;
- 		}
+			newVertices[i] = vertices[triangles[i]];
+			newUV[i] = mesh.uv[triangles[i]];
+			newNormals[i] = mesh.normals[mesh.triangles[i]];
+			newTriangles[i] = i;
+		}
 
-		//mesh.uv = newUV;
+
 		mesh.vertices = newVertices;
 		mesh.normals = newNormals;
 		mesh.triangles = newTriangles;
 
 		Color[] colors = new Color[mesh.vertices.Length];
-        for (int i = 0; i < colors.Length; i+=3)
+		for (int i = 0; i < colors.Length; i+=3)
 		{
-			Color rand_color = getRandomColor();
 			for(int x = 0; x < 3; x++)
-				colors[i + x] = rand_color;
+			{
+				colors[i + x] = chunk.colors[i / 3];
+			}
 		}
-       
+		
+		//Debug.Log(newTriangles.Length.ToString() + "  " + triangles.Length.ToString());
+		//Debug.Log(newVertices.Length.ToString() + "  " + vertices.Length.ToString());
 
-	   	mesh.colors = colors;
-		chunk.plane.GetComponent<MeshFilter>().sharedMesh = mesh;
-     }
+		for(int i = 0; i < 600; i++)
+		{
+			//Debug.Log(i.ToString() + "  " + vertices[i].ToString() + "  " + triangles[i].ToString()+ vertices[triangles[i]].ToString());
+		}
+		mesh.colors = colors;
+		chunk.visual.GetComponent<MeshFilter>().sharedMesh = mesh;
+	}
+
+	public void UpdateTexture(Chunk chunk)
+	{
+		Mesh mesh = chunk.plane.GetComponent<MeshFilter>().sharedMesh;
+		Vector3[] newVertices = new Vector3[mesh.triangles.Length];	
+		for (int i = 0; i < mesh.triangles.Length; i++) 
+		{
+			newVertices[i] = mesh.vertices[mesh.triangles[i]];
+		}
+		chunk.visual.GetComponent<MeshFilter>().sharedMesh.vertices = newVertices;
+	}
+
+	public void UpdateTexture(SelectedVertices sv)
+	{
+		//Mesh mesh = chunk.plane.GetComponent<MeshFilter>().sharedMesh;
+		//Vector3[] newVertices = new Vector3[mesh.triangles.Length];	
+		foreach(int i in sv.vertices_index)
+		{
+			
+		}
+		//chunk.visual.GetComponent<MeshFilter>().sharedMesh.vertices = newVertices;
+	}
+
+	Color[] ColorMap()
+	{
+		Color[] new_colors = new Color[200];
+		for(int i = 0; i < 200; i++)
+		{
+			new_colors[i] = getRandomColor();
+		}
+		//new_colors[0] = Color.red;
+		return new_colors;
+
+	}
      
-     private Color getRandomColor()
-     {
-         float red = Random.Range(0.0f, 0.05f);
-         float green = Random.Range(0.3f, 0.4f);
-         float blue = Random.Range(0, 0);
-         return new Color(red, green, blue);
-     }
+	private Color getRandomColor()
+	{
+		float red = Random.Range(0.0f, 0.10f);
+		float green = Random.Range(0.2f, 0.25f);
+		float blue = Random.Range(0, 0.0f);
+		return new Color(red, green, blue);
+	}
 
 
 	#endregion
 
 }
 	
-
+public struct LinkedIndex
+{
+	public int normal_index;
+	public List<int> unique_indexes;
+} 
 
 
 public class SelectedVertices 
