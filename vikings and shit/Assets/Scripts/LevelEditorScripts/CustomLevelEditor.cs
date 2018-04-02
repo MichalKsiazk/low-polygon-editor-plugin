@@ -341,6 +341,10 @@ public class CustomLevelEditor : MonoBehaviour
 		DestroyTerrain ();
 
 		chunks = new Chunk[width * lenght];
+		Mesh prefab_mesh = chunk_prefab.GetComponent<MeshFilter>().sharedMesh;
+		Mesh unique_mesh = VisualMesh(prefab_mesh);
+		linked_indexes = LinkIndexes(prefab_mesh, unique_mesh);
+
 		for (int z = 0; z < lenght; z++) 
 		{
 			for (int x = 0; x < width; x++) 
@@ -353,14 +357,19 @@ public class CustomLevelEditor : MonoBehaviour
 				chunks [index].plane.layer = LayerMask.NameToLayer ("Terrain");
 				chunks [index].chunk_serial_index = index;
 				chunks [index].plane.name = "chunk: " + index.ToString ();
-				InvertTriangles(chunks [index]);
-				InitColoredMesh(chunks[index]);
-				TestTexture (chunks [index]);
+
+				chunks [index].colors = NewColorMap();
+				//chunks [index].plane.GetComponent<MeshFilter>().sharedMesh = InvertedTriangles(chunks [index].plane.GetComponent<MeshFilter>().sharedMesh);
+				InitEmptyVisualMesh(chunks[index]);
+
+				chunks[index].visual.GetComponent<MeshFilter>().sharedMesh = VisualMesh(chunks [index].plane.GetComponent<MeshFilter>().sharedMesh);
+				int l = chunks[index].visual.GetComponent<MeshFilter>().sharedMesh.vertices.Length;
+				chunks[index].visual.GetComponent<MeshFilter>().sharedMesh.colors = NewTriangleColorMap(chunks [index].colors, l);
 			}
 		}
 	}
 
-	void InitColoredMesh(Chunk chunk)
+	void InitEmptyVisualMesh(Chunk chunk)
 	{
 		chunk.visual = new GameObject();
 		chunk.visual.transform.parent = chunk.plane.transform;
@@ -377,6 +386,31 @@ public class CustomLevelEditor : MonoBehaviour
 
 
 	#region UTILS
+
+	public LinkedIndex[] LinkIndexes(Mesh original, Mesh instantiated)
+	{
+		LinkedIndex[] li = new LinkedIndex[original.vertices.Length];
+
+		for(int i = 0; i < original.vertices.Length; i++)
+		{
+			li[i].normal_index = i;
+			int found = 0;
+			li[i].unique_indexes = new List<int>();
+			for(int a = 0; a < instantiated.vertices.Length; a++)
+			{
+				if(original.vertices[i] == instantiated.vertices[a])
+				{
+					li[i].unique_indexes.Add(a);
+					found++;
+					if(found > 8)
+					{
+						break;
+					}
+				}
+			}
+		}
+		return li;
+	}
 
 
 	public float Average(List<SelectedVertices> sv) 
@@ -396,13 +430,9 @@ public class CustomLevelEditor : MonoBehaviour
 		return sum / size;
 	}
 
-	public void InitLinkedIndexes() {
-		Mesh mesh = chunk_prefab.GetComponent<MeshFilter>().sharedMesh;
 
-	}
-
-	public void InvertTriangles(Chunk chunk){
-		Mesh mesh = chunk.plane.GetComponent<MeshFilter>().sharedMesh;
+	public Mesh InvertedTriangles(Mesh mesh)
+	{
 
 		int size = 11;
 		List<int> indices = new List<int>();
@@ -437,7 +467,7 @@ public class CustomLevelEditor : MonoBehaviour
 			t = !t;
         }
 		mesh.triangles = indices.ToArray();
-		chunk.plane.GetComponent<MeshCollider>().sharedMesh = mesh;
+		return mesh;
 	}
 		
 
@@ -448,12 +478,12 @@ public class CustomLevelEditor : MonoBehaviour
 	#region PAINTER
 
 
-	public void TestTexture(Chunk chunk) 
+	//instantiate all triangles as unique from parameter mesh 
+
+	public Mesh VisualMesh(Mesh original_mesh) 
 	{
 
-		Mesh mesh = Instantiate<Mesh>(chunk.plane.GetComponent<MeshFilter>().sharedMesh);
-
-		chunk.colors = ColorMap();
+		Mesh mesh = Instantiate<Mesh>(original_mesh);
 
 		Vector3[] vertices = mesh.vertices;
 		int[] triangles = mesh.triangles;
@@ -474,26 +504,9 @@ public class CustomLevelEditor : MonoBehaviour
 
 		mesh.vertices = newVertices;
 		mesh.normals = newNormals;
-		mesh.triangles = newTriangles;
+		mesh.triangles = newTriangles;	
 
-		Color[] colors = new Color[mesh.vertices.Length];
-		for (int i = 0; i < colors.Length; i+=3)
-		{
-			for(int x = 0; x < 3; x++)
-			{
-				colors[i + x] = chunk.colors[i / 3];
-			}
-		}
-		
-		//Debug.Log(newTriangles.Length.ToString() + "  " + triangles.Length.ToString());
-		//Debug.Log(newVertices.Length.ToString() + "  " + vertices.Length.ToString());
-
-		for(int i = 0; i < 600; i++)
-		{
-			//Debug.Log(i.ToString() + "  " + vertices[i].ToString() + "  " + triangles[i].ToString()+ vertices[triangles[i]].ToString());
-		}
-		mesh.colors = colors;
-		chunk.visual.GetComponent<MeshFilter>().sharedMesh = mesh;
+		return mesh;
 	}
 
 	public void UpdateTexture(Chunk chunk)
@@ -507,18 +520,22 @@ public class CustomLevelEditor : MonoBehaviour
 		chunk.visual.GetComponent<MeshFilter>().sharedMesh.vertices = newVertices;
 	}
 
-	public void UpdateTexture(SelectedVertices sv)
-	{
-		//Mesh mesh = chunk.plane.GetComponent<MeshFilter>().sharedMesh;
-		//Vector3[] newVertices = new Vector3[mesh.triangles.Length];	
+	public void UpdateMesh(SelectedVertices sv)
+	{	
+		Vector3[] plane_mesh = chunks[sv.chunk_index].plane.GetComponent<MeshFilter>().sharedMesh.vertices;
+		Vector3[] visual_mesh = chunks[sv.chunk_index].visual.GetComponent<MeshFilter>().sharedMesh.vertices;
+
 		foreach(int i in sv.vertices_index)
 		{
-			
+			foreach(int a in linked_indexes[i].unique_indexes)
+			{
+				visual_mesh[a] = plane_mesh[i];
+			}
 		}
-		//chunk.visual.GetComponent<MeshFilter>().sharedMesh.vertices = newVertices;
+		chunks[sv.chunk_index].visual.GetComponent<MeshFilter>().sharedMesh.vertices = visual_mesh;
 	}
 
-	Color[] ColorMap()
+	Color[] NewColorMap()
 	{
 		Color[] new_colors = new Color[200];
 		for(int i = 0; i < 200; i++)
@@ -528,6 +545,19 @@ public class CustomLevelEditor : MonoBehaviour
 		//new_colors[0] = Color.red;
 		return new_colors;
 
+	}
+
+	Color[] NewTriangleColorMap(Color[] original_colors, int lenght)
+	{
+		Color[] colors = new Color[lenght];
+		for (int i = 0; i < colors.Length; i+=3)
+		{
+			for(int x = 0; x < 3; x++)
+			{
+				colors[i + x] = original_colors[i / 3];
+			}
+		}
+		return colors;
 	}
      
 	private Color getRandomColor()

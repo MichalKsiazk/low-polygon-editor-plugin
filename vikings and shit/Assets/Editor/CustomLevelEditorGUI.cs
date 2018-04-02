@@ -168,7 +168,7 @@ public class CustomLevelEditorGUI : Editor
 				}
 				foreach (SelectedVertices sv in selected_vertices) 
 				{
-					level_editor.UpdateTexture(level_editor.chunks[sv.chunk_index]);
+					level_editor.UpdateMesh(sv);
 				}
 			}
 		}
