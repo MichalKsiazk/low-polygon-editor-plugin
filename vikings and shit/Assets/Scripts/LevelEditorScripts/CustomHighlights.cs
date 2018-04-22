@@ -32,7 +32,7 @@ public class CustomHighlights : MonoBehaviour
 
 			foreach(int index in sv.vertices_index) 
 			{
-				Gizmos.color = Color.red;
+				Gizmos.color = Color.magenta;
 				Gizmos.DrawCube(chunk.mesh_filter.sharedMesh.vertices[index] + chunk.plane.transform.position, new Vector3(0.1f,0.1f,0.1f));
 			}
 		}

@@ -17,7 +17,8 @@ public enum Tools
 	Raise,
 	Flat,
 	Paint,
-	Randomize
+	Randomize,
+	FlatRaise
 }
 
 public enum FlatOptions 
@@ -36,4 +37,10 @@ public enum DragType
 {
 	OnClick,
 	Drag
+}
+
+public enum Extremes
+{
+	Minimum,
+	Maximum
 }

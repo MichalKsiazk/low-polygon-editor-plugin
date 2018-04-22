@@ -24,9 +24,11 @@ public class Chunk {
 
 		this.chunk_serial_index = chunk_serial_index;
 
-
 		plane = GameObject.Instantiate(chunk_prefab);
 		plane.transform.position = position;
+
+		visual = RenderMesh(plane);
+
 		mesh_filter = plane.GetComponent<MeshFilter> ();
 		Mesh mesh_copy = Mesh.Instantiate(mesh_filter.sharedMesh) as Mesh;
 		mesh_filter.mesh = mesh_copy;
@@ -41,9 +43,25 @@ public class Chunk {
 		this.chunk_index_z = chunk_index_z / width;
 
 		plane = game_object;
+
+		visual = RenderMesh(plane);
+
 		mesh_filter = plane.GetComponent<MeshFilter> ();
 		Mesh mesh_copy = Mesh.Instantiate(mesh_filter.sharedMesh) as Mesh;
 		mesh_filter.mesh = mesh_copy;
 
 	}
+
+	GameObject RenderMesh(GameObject plane){
+		Transform[] childs = plane.GetComponentsInChildren<Transform> ();
+		foreach(Transform t in childs)
+		{
+			if(t.gameObject.name == "visual")
+			{
+				return t.gameObject;
+			}
+		}
+		return null;
+	} 
+
 }

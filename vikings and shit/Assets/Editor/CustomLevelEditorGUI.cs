@@ -50,7 +50,7 @@ public class CustomLevelEditorGUI : Editor
 
 			GUILayout.BeginHorizontal ();
 			GUILayout.Label ("delta height:");
-			level_editor.flat_strenght = EditorGUILayout.Slider(level_editor.flat_strenght, 0.0f, 1.0f);
+			level_editor.flat_strenght = EditorGUILayout.Slider(level_editor.flat_strenght, 0.0f, 0.2f);
 			//level_editor.delta_height = GUILayout.TextField
 			GUILayout.EndHorizontal ();
 			GUILayout.BeginHorizontal ();
@@ -97,6 +97,12 @@ public class CustomLevelEditorGUI : Editor
 
 		Event guiEvent = Event.current;
 		List<SelectedVertices> selected_vertices;
+
+		if(guiEvent.type == EventType.KeyDown && guiEvent.keyCode == KeyCode.LeftShift)
+		{
+			Debug.Log("scroll");
+			//level_editor.radius += guiEvent.delta.y;
+		}
 
 		if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0) 
 		{
@@ -147,6 +153,10 @@ public class CustomLevelEditorGUI : Editor
 					{
 						level_editor.Raise (sv, level_editor.delta_height);
 					}
+					break;
+				case Tools.FlatRaise:
+					Extremes extremes = level_editor.delta_height >= 0 ? Extremes.Minimum : Extremes.Maximum;
+					level_editor.FlatRaise (selected_vertices, level_editor.delta_height, extremes, 0.1f);
 					break;
 				case Tools.Flat:
 					if (level_editor.flat_options == FlatOptions.ToHitPoint) 

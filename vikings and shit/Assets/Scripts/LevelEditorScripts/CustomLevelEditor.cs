@@ -35,7 +35,6 @@ public class CustomLevelEditor : MonoBehaviour
 	public float radius;
 
 	[HideInInspector]
-	[Range(0f,1f)]
 	public float flat_strenght;
 
 	[HideInInspector]
@@ -65,10 +64,7 @@ public class CustomLevelEditor : MonoBehaviour
 			vertices [i] = new Vector3(vertices[i].x, y, vertices[i].z);
 		}
 		
-		chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices = vertices;
-		DestroyImmediate (chunks [sv.chunk_index].plane.GetComponent<MeshCollider> ());
-		chunks[sv.chunk_index].plane.gameObject.AddComponent<MeshCollider>();
-		chunks[sv.chunk_index].plane.GetComponent<MeshCollider>().sharedMesh = chunks[sv.chunk_index].mesh_filter.sharedMesh;
+		ApplyChanges(sv.chunk_index, vertices);
 	}
 
 
@@ -88,10 +84,8 @@ public class CustomLevelEditor : MonoBehaviour
 				vertices [i] += new Vector3 (0, flat_strenght, 0);
 			}
 		}
-		chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices = vertices;
-		DestroyImmediate (chunks [sv.chunk_index].plane.GetComponent<MeshCollider> ());
-		chunks[sv.chunk_index].plane.gameObject.AddComponent<MeshCollider>();
-		chunks[sv.chunk_index].plane.GetComponent<MeshCollider>().sharedMesh = chunks[sv.chunk_index].mesh_filter.sharedMesh;
+
+		ApplyChanges(sv.chunk_index, vertices);
 	}
 
 
@@ -113,29 +107,109 @@ public class CustomLevelEditor : MonoBehaviour
 			}
 		}
 
-		chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices = vertices;
-		DestroyImmediate (chunks [sv.chunk_index].plane.GetComponent<MeshCollider> ());
-		chunks[sv.chunk_index].plane.gameObject.AddComponent<MeshCollider>();
-		chunks[sv.chunk_index].plane.GetComponent<MeshCollider>().sharedMesh = chunks[sv.chunk_index].mesh_filter.sharedMesh;
+		ApplyChanges(sv.chunk_index, vertices);
 
+	}
+
+	public void Paint()
+	{
+		
 	}
 
 	public void Raise(SelectedVertices sv, float delta_height) 
 	{		
 		Vector3[] vertices = chunks[sv.chunk_index].mesh_filter.sharedMesh.vertices;
+
+
 		foreach (int i in sv.vertices_index) 
 		{
 			vertices [i] += new Vector3 (0, delta_height, 0);
 		}
 
-		chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices = vertices;
-
-
-		DestroyImmediate (chunks [sv.chunk_index].plane.GetComponent<MeshCollider> ());
-		chunks[sv.chunk_index].plane.gameObject.AddComponent<MeshCollider>();
-		chunks[sv.chunk_index].plane.GetComponent<MeshCollider>().sharedMesh = chunks[sv.chunk_index].mesh_filter.sharedMesh;
+		ApplyChanges(sv.chunk_index, vertices);
 	}
 
+	public void FlatRaise(List<SelectedVertices> sv, float delta_height, Extremes extremes, float deviation) 
+	{		
+
+		VerticesCopy[] copy = new VerticesCopy[sv.Count];
+		for(int i = 0; i < sv.Count; i++)
+		{
+			copy[i] = new VerticesCopy(chunks[sv[i].chunk_index].mesh_filter.sharedMesh.vertices);
+		}
+
+
+		float extreme_y = chunks[sv[0].chunk_index].mesh_filter.sharedMesh.vertices[0].y;
+		int extreme_index = 0;
+		int extreme_chunk_index = 0;
+
+
+		SelectedVertices[] extreme = new SelectedVertices[sv.Count];
+
+		for(int i = 0; i < sv.Count; i++)
+		{
+			extreme[i] = new SelectedVertices(sv[i].chunk_index, new List<int>());
+		}
+
+		if(extremes == Extremes.Minimum)
+		{
+			for(int s = 0; s < sv.Count; s++)
+			{
+				for(int i = 0; i < sv[s].vertices_index.Count; i++)
+				{
+					if(copy[s].vertices[sv[s].vertices_index[i]].y < extreme_y)
+					{
+						extreme_y = copy[s].vertices[sv[s].vertices_index[i]].y;
+						Debug.Log(extreme_y);
+					}
+				}
+			}
+			for(int s = 0; s < sv.Count; s++)
+			{
+				for(int i = 0; i < sv[s].vertices_index.Count; i++)
+				{
+					if(copy[s].vertices[sv[s].vertices_index[i]].y <= extreme_y + deviation)
+					{
+						extreme[s].vertices_index.Add(sv[s].vertices_index[i]);
+					}
+				}
+			}
+		}
+		else
+		{
+			for(int s = 0; s < sv.Count; s++)
+			{
+				for(int i = 0; i < sv[s].vertices_index.Count; i++)
+				{
+					if(copy[s].vertices[sv[s].vertices_index[i]].y > extreme_y)
+					{
+						extreme_y = copy[s].vertices[sv[s].vertices_index[i]].y;
+						Debug.Log(extreme_y);
+					}
+				}
+			}
+			for(int s = 0; s < sv.Count; s++)
+			{
+				for(int i = 0; i < sv[s].vertices_index.Count; i++)
+				{
+					if(copy[s].vertices[sv[s].vertices_index[i]].y >= extreme_y - deviation)
+					{
+						extreme[s].vertices_index.Add(sv[s].vertices_index[i]);
+					}
+				}
+			}
+		}
+
+		for(int i = 0; i < sv.Count; i++)
+		{
+			foreach (int s in extreme[i].vertices_index) 
+			{
+				copy[i].vertices[s] += new Vector3 (0, delta_height, 0);
+			}
+			ApplyChanges(extreme[i].chunk_index, copy[i].vertices);
+		}
+
+	}
 
 	#endregion
 
@@ -303,7 +377,7 @@ public class CustomLevelEditor : MonoBehaviour
 		foreach (Transform t in childs) 
 		{
 			string name = t.gameObject.name;
-			if (name == "Map") 
+			if (name == "Map" || name == "visual") 
 			{
 				continue;
 			}
@@ -311,6 +385,10 @@ public class CustomLevelEditor : MonoBehaviour
 			int index = int.Parse(name.Replace ("chunk: ", ""));
 			chunks [index] = new Chunk (t.gameObject, index, width);
 		}
+		Mesh prefab_mesh = chunks [0].plane.GetComponent<MeshFilter>().sharedMesh;
+		Mesh unique_mesh = VisualMesh(prefab_mesh);
+		linked_indexes = LinkIndexes(prefab_mesh, unique_mesh);
+
 	}
 
 
@@ -341,9 +419,7 @@ public class CustomLevelEditor : MonoBehaviour
 		DestroyTerrain ();
 
 		chunks = new Chunk[width * lenght];
-		Mesh prefab_mesh = chunk_prefab.GetComponent<MeshFilter>().sharedMesh;
-		Mesh unique_mesh = VisualMesh(prefab_mesh);
-		linked_indexes = LinkIndexes(prefab_mesh, unique_mesh);
+
 
 		for (int z = 0; z < lenght; z++) 
 		{
@@ -359,14 +435,18 @@ public class CustomLevelEditor : MonoBehaviour
 				chunks [index].plane.name = "chunk: " + index.ToString ();
 
 				chunks [index].colors = NewColorMap();
-				//chunks [index].plane.GetComponent<MeshFilter>().sharedMesh = InvertedTriangles(chunks [index].plane.GetComponent<MeshFilter>().sharedMesh);
+				chunks [index].plane.GetComponent<MeshFilter>().sharedMesh = InvertedTriangles(chunks [index].plane.GetComponent<MeshFilter>().sharedMesh);
 				InitEmptyVisualMesh(chunks[index]);
 
 				chunks[index].visual.GetComponent<MeshFilter>().sharedMesh = VisualMesh(chunks [index].plane.GetComponent<MeshFilter>().sharedMesh);
 				int l = chunks[index].visual.GetComponent<MeshFilter>().sharedMesh.vertices.Length;
 				chunks[index].visual.GetComponent<MeshFilter>().sharedMesh.colors = NewTriangleColorMap(chunks [index].colors, l);
+
 			}
 		}
+		Mesh prefab_mesh = chunks [0].plane.GetComponent<MeshFilter>().sharedMesh;
+		Mesh unique_mesh = VisualMesh(prefab_mesh);
+		linked_indexes = LinkIndexes(prefab_mesh, unique_mesh);
 	}
 
 	void InitEmptyVisualMesh(Chunk chunk)
@@ -386,6 +466,15 @@ public class CustomLevelEditor : MonoBehaviour
 
 
 	#region UTILS
+
+	public void ApplyChanges(int chunk_index, Vector3[] vertices)
+	{
+		chunks [chunk_index].mesh_filter.sharedMesh.vertices = vertices;
+		DestroyImmediate (chunks [chunk_index].plane.GetComponent<MeshCollider> ());
+		chunks[chunk_index].plane.gameObject.AddComponent<MeshCollider>();
+		chunks[chunk_index].plane.GetComponent<MeshCollider>().sharedMesh = chunks[chunk_index].mesh_filter.sharedMesh;
+	}
+
 
 	public LinkedIndex[] LinkIndexes(Mesh original, Mesh instantiated)
 	{
@@ -488,10 +577,10 @@ public class CustomLevelEditor : MonoBehaviour
 		Vector3[] vertices = mesh.vertices;
 		int[] triangles = mesh.triangles;
 
-		var newVertices = new Vector3[mesh.triangles.Length];
-		var newUV = new Vector2[mesh.triangles.Length];
-		var newNormals = new Vector3[mesh.triangles.Length];
-		var newTriangles = new int[mesh.triangles.Length];
+		Vector3[] newVertices = new Vector3[mesh.triangles.Length];
+		Vector2[] newUV = new Vector2[mesh.triangles.Length];
+		Vector3[] newNormals = new Vector3[mesh.triangles.Length];
+		int[] newTriangles = new int[mesh.triangles.Length];
 
 		for (int i = 0; i < mesh.triangles.Length; i++) 
 		{
@@ -537,13 +626,13 @@ public class CustomLevelEditor : MonoBehaviour
 
 	Color[] NewColorMap()
 	{
-		Color[] new_colors = new Color[200];
+		Color[] colors = new Color[200];
 		for(int i = 0; i < 200; i++)
 		{
-			new_colors[i] = getRandomColor();
+			colors[i] = getRandomColor();
 		}
 		//new_colors[0] = Color.red;
-		return new_colors;
+		return colors;
 
 	}
 
@@ -562,8 +651,8 @@ public class CustomLevelEditor : MonoBehaviour
      
 	private Color getRandomColor()
 	{
-		float red = Random.Range(0.0f, 0.10f);
-		float green = Random.Range(0.2f, 0.25f);
+		float red = Random.Range(0.0f, 0.0f);
+		float green = Random.Range(0.2f, 0.3f);
 		float blue = Random.Range(0, 0.0f);
 		return new Color(red, green, blue);
 	}
@@ -589,6 +678,15 @@ public class SelectedVertices
 	{
 		this.chunk_index = chunk_index;
 		this.vertices_index = vertices_index;
+	}
+}
+
+public class VerticesCopy
+{
+	public Vector3[] vertices;
+	public VerticesCopy(Vector3[] vertices)
+	{
+		this.vertices = vertices;
 	}
 }
 	
