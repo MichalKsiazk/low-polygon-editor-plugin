@@ -17,14 +17,14 @@ public class LPWE_WorldPainter : LPWE_Component
 		//Debug.Log("VL  " + main.chunks[sv.chunk_index].visual.GetComponent<MeshFilter>().sharedMesh.vertices.ToString()); 
 
 	 
-		foreach(int i in sv.vertices_index)
+		foreach(SV s in sv.vertices_index)
 		{
 			Color col = getRandomColor(color);
-			if((i == 0 || i % 3 == 0) || sv.vertices_index.Contains(i + main.terrain_creator.width) || sv.vertices_index.Contains(i + main.terrain_creator.width + 1))
+			if((s.serial_index == 0 || s.serial_index % 3 == 0))
 			{
-				colors[i] = col;
-				colors[i + 1] = col;
-				colors[i + 2] = col;
+				colors[s.serial_index] = col;
+				colors[s.serial_index + 1] = col;
+				colors[s.serial_index + 2] = col;
 			}
 			else
 			{

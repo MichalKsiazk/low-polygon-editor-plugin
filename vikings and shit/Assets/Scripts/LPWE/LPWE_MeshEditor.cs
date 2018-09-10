@@ -21,11 +21,11 @@ public class LPWE_MeshEditor : LPWE_Component
 	{
 		Vector3[] vertices = main.chunks[sv.chunk_index].mesh_filter.sharedMesh.vertices;
 	
-		foreach(int i in sv.vertices_index) 
+		foreach(SV s in sv.vertices_index) 
 		{
-			if(i % 3 == 0)
+			if(s.serial_index % 3 == 0)
 			{
-				vertices [i] = new Vector3(vertices[i].x, height, vertices[i].z);
+				vertices [s.serial_index] = new Vector3(vertices[s.serial_index].x, height, vertices[s.serial_index].z);
 			}
 		}
 		main.utils.ApplyChanges(sv.chunk_index, ref vertices);
@@ -37,15 +37,15 @@ public class LPWE_MeshEditor : LPWE_Component
 		
 		Vector3[] vertices = main.chunks[sv.chunk_index].mesh_filter.sharedMesh.vertices;
 
-		foreach (int i in sv.vertices_index) 
+		foreach(SV s in sv.vertices_index) 
 		{
-			if (vertices [i].y > hit_point.y) 
+			if (vertices [s.serial_index].y > hit_point.y) 
 			{
-				vertices [i] -= new Vector3 (0, force, 0);
+				vertices [s.serial_index] -= new Vector3 (0, force, 0);
 			} 
 			else 
 			{
-				vertices [i] += new Vector3 (0, force, 0);
+				vertices [s.serial_index] += new Vector3 (0, force, 0);
 			}
 		}
 
@@ -59,15 +59,15 @@ public class LPWE_MeshEditor : LPWE_Component
 
 		Vector3[] vertices = main.chunks[sv.chunk_index].mesh_filter.sharedMesh.vertices;
 
-		foreach (int i in sv.vertices_index) 
+		foreach(SV s in sv.vertices_index) 
 		{
-			if (vertices [i].y > average) 
+			if (vertices [s.serial_index].y > average) 
 			{
-				vertices [i] -= new Vector3 (0, force, 0);
+				vertices [s.serial_index] -= new Vector3 (0, force, 0);
 			} 
 			else 
 			{
-				vertices [i] += new Vector3 (0, force, 0);
+				vertices [s.serial_index] += new Vector3 (0, force, 0);
 			}
 		}
 
@@ -81,9 +81,9 @@ public class LPWE_MeshEditor : LPWE_Component
 		Vector3[] vertices = main.chunks[sv.chunk_index].mesh_filter.sharedMesh.vertices;
 
 
-		foreach (int i in sv.vertices_index) 
+		foreach(SV s in sv.vertices_index) 
 		{
-			vertices [i] += new Vector3 (0, force, 0);
+			vertices [s.serial_index] += new Vector3 (0, force, 0);
 		}
 
 		main.utils.ApplyChanges(sv.chunk_index, ref vertices);
@@ -91,7 +91,7 @@ public class LPWE_MeshEditor : LPWE_Component
 
 	public void FlatRaise(List<SelectedVertices> sv, float force, Extremes extremes, float deviation) 
 	{		
-
+		
 		VerticesCopy[] copy = new VerticesCopy[sv.Count];
 		for(int i = 0; i < sv.Count; i++)
 		{
@@ -106,7 +106,7 @@ public class LPWE_MeshEditor : LPWE_Component
 
 		for(int i = 0; i < sv.Count; i++)
 		{
-			extreme[i] = new SelectedVertices(sv[i].chunk_index, new List<int>());
+			extreme[i] = new SelectedVertices(sv[i].chunk_index, new List<SV>());
 		}
 
 		if(extremes == Extremes.Minimum)
@@ -115,9 +115,9 @@ public class LPWE_MeshEditor : LPWE_Component
 			{
 				for(int i = 0; i < sv[s].vertices_index.Count; i++)
 				{
-					if(copy[s].vertices[sv[s].vertices_index[i]].y < extreme_y)
+					if(copy[s].vertices[sv[s].vertices_index[i].serial_index].y < extreme_y)
 					{
-						extreme_y = copy[s].vertices[sv[s].vertices_index[i]].y;
+						extreme_y = copy[s].vertices[sv[s].vertices_index[i].serial_index].y;
 					}
 				}
 			}
@@ -125,7 +125,7 @@ public class LPWE_MeshEditor : LPWE_Component
 			{
 				for(int i = 0; i < sv[s].vertices_index.Count; i++)
 				{
-					if(copy[s].vertices[sv[s].vertices_index[i]].y <= extreme_y + deviation)
+					if(copy[s].vertices[sv[s].vertices_index[i].serial_index].y <= extreme_y + deviation)
 					{
 						extreme[s].vertices_index.Add(sv[s].vertices_index[i]);
 					}
@@ -138,9 +138,9 @@ public class LPWE_MeshEditor : LPWE_Component
 			{
 				for(int i = 0; i < sv[s].vertices_index.Count; i++)
 				{
-					if(copy[s].vertices[sv[s].vertices_index[i]].y > extreme_y)
+					if(copy[s].vertices[sv[s].vertices_index[i].serial_index].y > extreme_y)
 					{
-						extreme_y = copy[s].vertices[sv[s].vertices_index[i]].y;
+						extreme_y = copy[s].vertices[sv[s].vertices_index[i].serial_index].y;
 					}
 				}
 			}
@@ -148,7 +148,7 @@ public class LPWE_MeshEditor : LPWE_Component
 			{
 				for(int i = 0; i < sv[s].vertices_index.Count; i++)
 				{
-					if(copy[s].vertices[sv[s].vertices_index[i]].y >= extreme_y - deviation)
+					if(copy[s].vertices[sv[s].vertices_index[i].serial_index].y >= extreme_y - deviation)
 					{
 						extreme[s].vertices_index.Add(sv[s].vertices_index[i]);
 					}
@@ -158,15 +158,14 @@ public class LPWE_MeshEditor : LPWE_Component
 
 		for(int i = 0; i < sv.Count; i++)
 		{
-			foreach (int s in extreme[i].vertices_index) 
+			foreach (SV s in extreme[i].vertices_index) 
 			{
-				copy[i].vertices[s] += new Vector3 (0, force, 0);
+				copy[i].vertices[s.serial_index] += new Vector3 (0, force, 0);
 			}
 			main.utils.ApplyChanges(extreme[i].chunk_index, ref copy[i].vertices);
 		}
-
+		
 	}
-
 	private class ChangesToApply
 	{
 		public int chunk_index;
@@ -193,18 +192,18 @@ public class LPWE_MeshEditor : LPWE_Component
 
 
 
-		foreach(int i in sv.vertices_index)
+		foreach(SV s in sv.vertices_index)
 		{
 			//Vector3 random_vector = new Vector3(Random.Range(-random,random),0, Random.Range(-random,random));
-			vertices[i] += random;
+			vertices[s.serial_index] += random;
 
 
-			if(main.connected_vertices[i] == null) continue;
+			if(main.connected_vertices[s.serial_index] == null) continue;
 
-			foreach(ConnectedVertices cv in main.connected_vertices[i])
+			foreach(ConnectedVertices cv in main.connected_vertices[s.serial_index])
 			{
 				Vector3[] copy = main.chunks[sv.chunk_index + cv.chunk_index_shift].mesh_filter.sharedMesh.vertices;
-				copy[cv.vert_index] = vertices[i];
+				copy[cv.vert_index] = vertices[s.serial_index];
 				main.utils.ApplyChanges(sv.chunk_index + cv.chunk_index_shift, ref copy);
 			}
 		}

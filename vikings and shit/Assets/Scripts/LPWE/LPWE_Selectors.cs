@@ -121,7 +121,7 @@ public class LPWE_Selectors : LPWE_Component
 	SelectedVertices SquareScan2D (Chunk chunk, Vector3 point, float size) 
 	{
 
-		List<int> vertices = new List<int> ();
+		List<SV> vertices = new List<SV> ();
 		MeshFilter mf = chunk.plane.GetComponent<MeshFilter> ();
 
 		for(int i = 0; i < mf.sharedMesh.vertices.Length; i++)
@@ -137,7 +137,7 @@ public class LPWE_Selectors : LPWE_Component
 
 			if (bounds_x && bounds_z) 
 			{
-				vertices.Add (i);
+				vertices.Add (new SV(i));
 			}
 		}
 		return new SelectedVertices(chunk.chunk_serial_index, vertices);
@@ -147,7 +147,7 @@ public class LPWE_Selectors : LPWE_Component
 	SelectedVertices RoundScan3D (Chunk chunk, Vector3 point, float size) 
 	{
 
-		List<int> vertices = new List<int> ();
+		List<SV> vertices = new List<SV> ();
 		MeshFilter mf = chunk.plane.GetComponent<MeshFilter> ();
 
 		for(int i = 0; i < mf.sharedMesh.vertices.Length; i++) 
@@ -158,7 +158,7 @@ public class LPWE_Selectors : LPWE_Component
 
 			if (dst < size) 
 			{
-				vertices.Add (i);
+				vertices.Add (new SV(i));
 			}
 		}
 		return new SelectedVertices(chunk.chunk_serial_index, vertices);
@@ -190,7 +190,7 @@ public class LPWE_Selectors : LPWE_Component
 	SelectedVertices FindFaces3D (Chunk chunk, Vector3 point, float size) 
 	{
 
-		List<int> vertices = new List<int> ();
+		List<SV> vertices = new List<SV> ();
 		MeshFilter mf = chunk.visual.GetComponent<MeshFilter> ();
 
 		for(int i = 0; i < mf.sharedMesh.vertices.Length; i+=3) 
@@ -201,7 +201,7 @@ public class LPWE_Selectors : LPWE_Component
 
 			if (dst < size) 
 			{
-				vertices.Add (i);
+				vertices.Add (new SV(i));
 			}
 		}
 		return new SelectedVertices(chunk.chunk_serial_index, vertices);

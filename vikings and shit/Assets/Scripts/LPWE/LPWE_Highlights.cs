@@ -29,10 +29,10 @@ public class LPWE_Highlights : LPWE_Component
 		{
 			foreach (SelectedVertices sv in verts) 
 			{
-				foreach(int index in sv.vertices_index) 
+				foreach(SV s in sv.vertices_index) 
 				{
 					Gizmos.color = Color.magenta;
-					Gizmos.DrawCube(main.chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices[index] + main.chunks [sv.chunk_index].plane.transform.position, new Vector3(0.1f,0.1f,0.1f));
+					Gizmos.DrawCube(main.chunks [sv.chunk_index].mesh_filter.sharedMesh.vertices[s.serial_index] + main.chunks [sv.chunk_index].plane.transform.position, new Vector3(0.1f,0.1f,0.1f));
 				}
 			}
 		}
@@ -40,10 +40,10 @@ public class LPWE_Highlights : LPWE_Component
 		{
 			foreach (SelectedVertices sv in verts) 
 			{ 
-				foreach(int index in sv.vertices_index) 
+				foreach(SV s in sv.vertices_index) 
 				{
 					Gizmos.color = Color.magenta;
-					Gizmos.DrawCube(main.chunks [sv.chunk_index].visual.GetComponent<MeshFilter>().sharedMesh.vertices[index] + main.chunks [sv.chunk_index].visual.transform.position, new Vector3(0.1f,0.1f,0.1f));
+					Gizmos.DrawCube(main.chunks [sv.chunk_index].visual.GetComponent<MeshFilter>().sharedMesh.vertices[s.serial_index] + main.chunks [sv.chunk_index].visual.transform.position, new Vector3(0.1f,0.1f,0.1f));
 				}
 			}
 		}
